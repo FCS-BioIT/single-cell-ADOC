@@ -15,6 +15,9 @@ The single-cell RNA-seq analysis in this repository focuses on characterizing ce
 
 Code used to process the data is published in Zenodo under the DOI: 10.5281/zenodo.17412607 and the GitHub repo: https://github.com/FCS-BioIT/single-cell-ADOC
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.17412607.svg)](https://doi.org/10.5281/zenodo.17412607)
+
+
 ## Data availability
 
 Processed data required to reproduce results is published in ArrayExpress under the accession code E-MTAB-15842.
