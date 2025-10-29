@@ -1,0 +1,17 @@
+name: functional_enrichment
+channels:
+  - conda-forge
+  - bioconda
+  - genomedk
+dependencies:
+  - r-base=4.4.3
+  - r-seurat=5.3.0
+  - bioconductor-dittoSeq=1.18.0
+  - r-ggplot2
+  - r-openxlsx
+  - r-svglite
+  - r-tidyverse
+  - r-ggrepel
+  - r-readr
+  - bioconductor-biocparallel
+  - r-webgestaltr=0.4.6

@@ -1,0 +1,324 @@
+import os
+import glob
+import re
+from pathlib import Path
+
+# --- Config and directories ---
+PIPELINE_DIR = Path(config.get("PIPELINE_DIR", os.getcwd())).resolve()
+
+# --- Find matrix files ---
+mtx_files = glob.glob("input/matrix/*_matrix.mtx")
+
+
+def parse_name(path):
+    base = os.path.basename(path)
+    # e.g. SZ09TE_CNT_decontx_feature_bc_matrix_filtered_matrix.mtx
+    m = re.match(
+        r"(SZ\d+TE_[A-Z]+)_(.*?)_feature_bc_matrix(_filtered)?_matrix\.mtx", base
+    )
+    if not m:
+        raise ValueError(f"Cannot parse {base}")
+    sample, type, extra = m.groups()
+    return sample, type, extra or ""
+
+
+pairs = [parse_name(f) for f in mtx_files]
+
+
+# =========================================================
+# FINAL TARGETS
+# =========================================================
+rule all:
+    input:
+        # Differential expression results
+        expand(
+            "output/differential_expression/plots/DE_{contrast}_volcano.png",
+            contrast=[
+                "Stroma HT_vs_Stroma No-HT",
+                "Epithelium HT_vs_Epithelium No-HT",
+                "Cycling epithelium HT_vs_Cycling epithelium No-HT",
+            ],
+        ),
+        # Functional enrichment results
+        expand(
+            "output/differential_expression/WebGestalt_GOBP_ORA/plots/DE_{contrast}_GOBP_UP_GOBP_ORA.svg",
+            contrast=[
+                "Stroma HT_vs_Stroma No-HT",
+                "Epithelium HT_vs_Epithelium No-HT",
+                "Cycling epithelium HT_vs_Cycling epithelium No-HT",
+            ],
+        ),
+        # Cell to cell communication results
+        heatmap_out="output/ccc/heatmap_outgoing_CNT_vs_HT.png",
+        heatmap_in="output/ccc/heatmap_incoming_CNT_vs_HT.png",
+        # Reference dataset results
+        projection_result="output/reference_projection/plots/heatmap_cca_heca_ct_lineage.svg",
+
+
+# =========================================================
+# CONVERT TO H5
+# =========================================================
+rule convert_to_h5:
+    input:
+        barcodes=lambda w: f"input/matrix/{w.sample}_{w.type}_feature_bc_matrix{next(e for s,t,e in pairs if s==w.sample and t==w.type)}_barcodes.tsv",
+        features=lambda w: f"input/matrix/{w.sample}_{w.type}_feature_bc_matrix{next(e for s,t,e in pairs if s==w.sample and t==w.type)}_features.tsv",
+        matrix=lambda w: f"input/matrix/{w.sample}_{w.type}_feature_bc_matrix{next(e for s,t,e in pairs if s==w.sample and t==w.type)}_matrix.mtx",
+    output:
+        "output/h5_matrices/{sample}_{type}.h5",
+    conda:
+        PIPELINE_DIR / "envs/decontx.yaml"  # reuse same R environment
+    shell:
+        """
+        Rscript {PIPELINE_DIR}/src/upstream/convert_to_h5.R \
+          --matrix {input.matrix} \
+          --features {input.features} \
+          --barcodes {input.barcodes} \
+          --output {output}
+        """
+
+
+# =========================================================
+# RUN DECONTX
+# =========================================================
+rule decontx:
+    input:
+        filtered_h5="output/h5_matrices/{sample}_filtered.h5",
+        raw_h5="output/h5_matrices/{sample}_raw.h5",
+    output:
+        h5="output/decontx/{sample}_decontx.h5",
+        csv="output/decontx/{sample}_decontx_metrics.csv",
+    conda:
+        str(PIPELINE_DIR / "envs/decontx.yaml")
+    shell:
+        """
+        mkdir -p $(dirname {output.h5})
+        Rscript {PIPELINE_DIR}/src/upstream/decontx_remove_background.R \
+            --input {input.filtered_h5} \
+            --input_raw {input.raw_h5} \
+            --output_h5 {output.h5} \
+            --output_csv {output.csv}
+        """
+
+
+# =========================================================
+# RUN QC
+# =========================================================
+rule qc:
+    input:
+        h5=expand(
+            "output/decontx/{sample}_decontx.h5",
+            sample=sorted({s for s, t, e in pairs if t == "filtered"}),
+        ),
+        metadata="metadata/metadata.csv",
+        atlas="references/sc-rnaseq/endometriumAtlasV2_cells_with_counts.rds",
+        utils="src/scrnaseq-preprocess/utils_qc.R",
+    output:
+        "output/qc/QC_scRNA_stats.csv",
+        "output/qc/lineages_pre.csv",
+        "output/qc/lineages_post.csv",
+    conda:
+        PIPELINE_DIR / "envs/qc.yaml"
+    shell:
+        """
+        Rscript {PIPELINE_DIR}/src/scrnaseq-preprocess/qc.R \
+            --metadata {input.metadata} \
+            --input_dir output/decontx \
+            --output_dir output/qc \
+            --atlas {input.atlas} \
+            --utils {input.utils}
+        """
+
+
+# =========================================================
+# SAMPLE INTEGRATION
+# =========================================================
+rule sample_integration:
+    input:
+        "output/qc/QC_scRNA_stats.csv",
+        qc_rds_dir="output/qc/seurat_qc",  # folder of QC-filtered RDS
+    output:
+        merged="output/sample_integration/integration_sample_id.rds",
+        seurat_chip="output/sample_integration/data/chip/seurat_filtered.rds",
+    params:
+        utils="src/scrnaseq-preprocess/utils_sample_integration.R",
+    conda:
+        PIPELINE_DIR / "envs/sample_integration.yaml"
+    shell:
+        """
+        mkdir -p $(dirname {output.merged})
+        Rscript {PIPELINE_DIR}/src/scrnaseq-preprocess/sample_integration.R
+        """
+
+
+# =========================================================
+#  ANNOTATION
+# =========================================================
+rule annotation:
+    input:
+        seurat_chip="output/sample_integration/data/chip/seurat_filtered.rds",
+    output:
+        seurat_annoted="output/annotation/marker_annotation_v2/data/seurat_filtered_annoted.rds",
+    params:
+        script="src/annotation/annotation.R",
+    conda:
+        PIPELINE_DIR / "envs/annotation.yaml"
+    shell:
+        """
+        Rscript {PIPELINE_DIR}/{params.script}
+        """
+
+
+# =========================================================
+# Differential expression
+# =========================================================
+rule differential_expression:
+    input:
+        seurat_annoted="output/annotation/marker_annotation_v2/data/seurat_filtered_annoted.rds",
+    output:
+        expand(
+            "output/differential_expression/plots/DE_{contrast}_volcano.png",
+            contrast=[
+                "Stroma HT_vs_Stroma No-HT",
+                "Epithelium HT_vs_Epithelium No-HT",
+                "Cycling epithelium HT_vs_Cycling epithelium No-HT",
+            ],
+        ),
+    conda:
+        PIPELINE_DIR / "envs/differential_expression.yaml"
+    params:
+        script_dea=PIPELINE_DIR
+        / "src/differential_expression/differential_expression.R",
+        script_viz=PIPELINE_DIR / "src/differential_expression/de_volcanoplots.R",
+    shell:
+        """
+        echo 'Running differential expression analysis'
+        Rscript {params.script_dea}
+        echo 'Making visualizations for DEA'
+        Rscript {params.script_viz}
+        """
+
+
+rule functional_enrichment:
+    input:
+        expand(
+            "output/differential_expression/plots/DE_{contrast}_volcano.png",
+            contrast=[
+                "Stroma HT_vs_Stroma No-HT",
+                "Epithelium HT_vs_Epithelium No-HT",
+                "Cycling epithelium HT_vs_Cycling epithelium No-HT",
+            ],
+        ),
+    output:
+        expand(
+            "output/differential_expression/WebGestalt_GOBP_ORA/plots/{contrast}_GOBP_UP_GOBP_ORA.svg",
+            contrast=[
+                "Stroma HT_vs_Stroma No-HT",
+                "Epithelium HT_vs_Epithelium No-HT",
+                "Cycling epithelium HT_vs_Cycling epithelium No-HT",
+            ],
+        ),
+    conda:
+        PIPELINE_DIR / "envs/functional_enrichment.yaml"
+    params:
+        script_ora=PIPELINE_DIR / "src/differential_expression/ora_gobp.R",
+        script_viz=PIPELINE_DIR / "src/differential_expression/ora_dotplots_gobp.R",
+    shell:
+        """
+        echo 'Running overrepresentation analysis using GO Biological Process'
+        Rscript {params.script_ora}
+        echo 'Generating graphic representations of results'
+        Rscript {params.script_viz}
+        """
+
+
+# =========================================================
+# Cellchat
+# =========================================================
+rule cellchat:
+    input:
+        seurat_annoted="output/annotation/marker_annotation_v2/data/seurat_filtered_annoted.rds",
+    output:
+        bundled_ccc="output/ccc/ccc_bundle_HT_vs_CNT.rds",
+    params:
+        script_cc1="src/cellchat/cellchat.R",
+    conda:
+        PIPELINE_DIR / "envs/cellchat.yaml"
+    shell:
+        """
+        echo 'Installing NMF 0.28'
+        Rscript -e 'install.packages("NMF", version = "0.28", repos = "https://cloud.r-project.org")'
+
+        echo 'Installing CellChat'
+        Rscript -e 'devtools::install_github("jinworks/CellChat@623f48f")'
+
+        echo 'Running cell to cell communication comparing conditions'
+        Rscript {params.script_cc1}
+        """
+
+
+rule cellchat_grouped:
+    input:
+        bundled_ccc="output/ccc/ccc_bundle_HT_vs_CNT.rds",
+    output:
+        circle="output/ccc_pooled/circle_overall_all.png",
+    params:
+        script_cc2="src/cellchat/cellchat_grouped.R",
+    conda:
+        PIPELINE_DIR / "envs/cellchat.yaml"
+    shell:
+        """
+        echo 'Running cell to cell communication in the whole dataset'
+        Rscript {params.script_cc2}        
+        """
+
+
+rule cellchat_contrib_plots:
+    input:
+        circle="output/ccc_pooled/circle_overall_all.png",
+    output:
+        heatmap_out="output/ccc/heatmap_outgoing_CNT_vs_HT.png",
+        heatmap_in="output/ccc/heatmap_incoming_CNT_vs_HT.png",
+    params:
+        script_cc1_plots="src/cellchat/ccc_infoflow_contrib_heatmaps.R",
+    conda:
+        PIPELINE_DIR / "envs/cellchat.yaml"
+    shell:
+        """
+        echo 'Creating graphics'
+        Rscript {params.script_cc1_plots}
+        """
+
+
+# =========================================================
+# Reference dataset
+# =========================================================
+rule reference_load:
+    input:
+        seurat_annoted="output/annotation/marker_annotation_v2/data/seurat_filtered_annoted.rds",
+        reference_sc="references/sc-rnaseq/endometriumAtlasV2_cells_with_counts.rds",
+    output:
+        prepared_reference="references/sc-rnaseq/endometriumAtlas_cells_with_counts_integrated.rds",
+    params:
+        script="src/reference_dataset/load_reference.R",
+    conda:
+        PIPELINE_DIR / "envs/reference.yaml"
+    shell:
+        """
+        Rscript {params.script}
+        """
+
+
+rule reference_projection:
+    input:
+        seurat_annoted="output/annotation/marker_annotation_v2/data/seurat_filtered_annoted.rds",
+        prepared_reference="references/sc-rnaseq/endometriumAtlas_cells_with_counts_integrated.rds",
+    output:
+        heatmap="output/reference_projection/plots/heatmap_cca_heca_ct_lineage.svg",
+    params:
+        script="src/reference_dataset/reference_projection.R",
+    conda:
+        PIPELINE_DIR / "envs/reference.yaml"
+    shell:
+        """
+        Rscript {params.script}
+        """

@@ -66,6 +66,22 @@ if (requireNamespace("future", quietly = TRUE)) {
 stopifnot(file.exists(opt$seurat_rds))
 seu <- readRDS(opt$seurat_rds) # Using base readRDS for portability
 
+# Celltypes in common
+seu$celltype_common <- seu$celltype
+
+seu$celltype_common[which(
+  seu$celltype == "Stromal" |
+    seu$celltype == "Non-decidual stroma" |
+    seu$celltype == "Decidual stroma"
+)] <- "Stroma"
+seu$celltype_common[which(
+  seu$celltype == "Luminal-like epithelium" |
+    seu$celltype == "HT epithelium I" |
+    seu$celltype == "HT epithelium II"
+)] <- "Epithelium"
+
+unique(seu$celltype_common)
+
 # Optional: harmonize some fine-grained labels into common ones
 if (!("celltype_common" %in% colnames(seu@meta.data))) {
   seu$celltype_common <- seu@meta.data[[opt$celltype_col]]

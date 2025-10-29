@@ -1,0 +1,19 @@
+name: differential_expression
+channels:
+  - conda-forge
+  - bioconda
+  - genomedk
+dependencies:
+  - r-base=4.4.3
+  - r-seurat=5.3.0
+  - bioconductor-dittoSeq=1.18.0
+  - r-ggplot2
+  - r-clustree=0.5.1
+  - r-openxlsx
+  - bioconda::r-presto
+  - r-svglite
+  - bioconductor-mast=1.32.0
+  - r-tidyverse
+  - r-ggrepel
+  - r-readr
+  - bioconductor-biocparallel

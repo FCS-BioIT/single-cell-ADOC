@@ -64,7 +64,11 @@ DimPlot(
   group.by = c("dataset"), raster = FALSE
 )
 
-reference <- FindNeighbors(reference, reduction = "harmony", dims = 1:30)
+reference <- FindNeighbors(
+  reference,
+  reduction = "harmony.dataset.sample",
+  dims = 1:30
+)
 reference <- FindClusters(
   reference,
   resolution = 2,
@@ -85,8 +89,3 @@ reference <- LoadSeuratRds(
     "endometriumAtlas_cells_with_counts_integrated.rds"
   )
 )
-
-# Loading the dataset to query
-sc <- LoadSeuratRds(
-  file = "output/annotation/marker_annotation/data/seurat_filtered_annoted.rds"
-) # nolint

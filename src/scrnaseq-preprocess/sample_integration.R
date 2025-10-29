@@ -500,6 +500,8 @@ p6
 
 sc_multiple_join <- JoinLayers(sc_multiple)
 
+gc(full = TRUE, reset = TRUE)
+
 future::plan("multisession", workers = 8)
 options(future.globals.maxSize = 4000 * 1024^2)
 DefaultAssay(sc_multiple_join) <- "RNA"
@@ -508,6 +510,8 @@ all_markers <- FindAllMarkers(
   min.pct = 0.25
 )
 future::plan("sequential")
+
+gc(full = TRUE, reset = TRUE)
 
 all_markers <- all_markers[, c(7, 1:6)]
 write.table(all_markers,
@@ -707,11 +711,9 @@ write.table(all_markers_03[, c(7, 1:6)],
   quote = FALSE,
   sep = ","
 )
-all_markers_03 <- read.table(
-  file = paste0(dir_tabl, "/markers_res03_preliminary.csv"),
-  sep = ",",
-  col.names = 1,
-  row.names = NULL
+all_markers_03 <- read.csv(
+  paste0(dir_tabl, "/markers_res03_preliminary.csv"),
+  stringsAsFactors = FALSE
 )
 # Save integrated object
 # ========================
@@ -954,6 +956,8 @@ sc_filt <- sc_multiple[
   )
 ]
 
+dir.create(file.path(dir_plots, "chip"), showWarnings = FALSE, recursive = TRUE)
+dir.create(file.path(dir_tabl, "chip"), showWarnings = FALSE, recursive = TRUE)
 
 # Integration without removing HT
 # #####################################

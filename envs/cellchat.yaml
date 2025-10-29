@@ -1,0 +1,47 @@
+name: cellchat_env
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - r-base=4.4.3
+  - r-devtools
+  - r-seurat=5.3.0
+  - r-patchwork
+  - r-optparse
+  - r-dplyr
+  - r-ggplot2
+  - r-ggpubr
+  - r-forcats
+  - r-readr
+  - bioconda::r-presto
+  - bioconductor-complexheatmap=2.22.0
+  - r-future
+  - r-future.apply
+  - r-igraph=2.1.4
+  - r-data.table
+  - r-tibble
+  - r-tidyr
+  - r-matrix=1.7_4
+  - r-rlang
+  - r-cowplot
+  - r-reshape2
+  - r-scales
+  - r-viridis
+  - r-remotes
+  - r-glue
+  - r-stringr
+  - r-rcpp
+  - r-ggrepel
+  - r-circlize
+  - r-ggnewscale
+  - r-rcolorbrewer
+  - r-xml
+  - r-biocmanager
+  - r-magrittr
+  - r-future
+  - r-parallelly
+  - r-biocmanager
+  - bioconductor-biobase
+  - r-svglite
+  - bioconductor-biocneighbors

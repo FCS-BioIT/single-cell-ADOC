@@ -1,0 +1,9 @@
+.pixi/
+.snakemake/
+
+output/
+input/
+metadata/
+references/
+
+Rplots.pdf

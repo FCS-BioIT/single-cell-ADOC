@@ -21,9 +21,26 @@ library("DT")
 library("stringr")
 library("RColorBrewer")
 library("janitor")
-source("src/scrnaseq-preprocess/utils_qc.R")
+library("optparse")
+
+
+
+
+option_list <- list(
+  make_option("--metadata", type = "character", help = "Path to metadata CSV"),
+  make_option("--input_dir", type = "character", help = "Root input directory with CellBender/DecontX results"),
+  make_option("--output_dir", type = "character", help = "Root output directory for QC results"),
+  make_option("--atlas", type = "character", help = "Path to reference atlas .rds file"),
+  make_option("--utils", type = "character", default = "src/scrnaseq-preprocess/utils_qc.R", help = "Path to utils_qc.R")
+)
+
+opt <- parse_args(OptionParser(option_list = option_list))
+
+source(opt$utils)
 
 set.seed(47)
+
+
 
 
 ## QC Filter Parameters
@@ -46,7 +63,7 @@ paste0("scDblFinder ", packageVersion("scDblFinder"))
 
 ## Load Roser-Vento Lab Cell Atlas
 atlasdata_cell <- readRDS(
-  "./references/sc-rnaseq/endometriumAtlasV2_cells_with_counts.rds"
+  opt$atlas
 )
 ## Keep controls only
 atlasdata_cell <- atlasdata_cell[
@@ -81,20 +98,21 @@ gc()
 # the name of the sample.
 # Folder name of sample folders and bioinformatics_id colname
 # of metadata need to be the same
-metadata <- read.csv(file = "./metadata/metadata.csv")
+metadata <- read.csv(file = opt$metadata)
 
 root_input_folders <- c(
-  "./input/raw_matrix/decontx"
+  opt$input_dir
 )
-output_rds_folder <- "./output/qc/seurat_qc/"
-root_output_qc_folder <- "./output/qc/"
+output_rds_folder <- file.path(opt$output_dir, "seurat_qc")
+root_output_qc_folder <- opt$output_dir
 
 # List samples to process
-list_dir_input_folders <- list.dirs(
+list_dir_input_folders <- list.files(
   path = root_input_folders,
-  recursive = FALSE
+  pattern = "_decontx\\.h5$",
+  full.names = TRUE
 )
-sample_names <- basename(list_dir_input_folders)
+sample_names <- basename(tools::file_path_sans_ext(list_dir_input_folders))
 sample_numbers <- as.numeric(substring(sample_names, 3, 4))
 
 list_dir_input_folders <- list_dir_input_folders[order(sample_numbers)]
@@ -131,6 +149,8 @@ qc_stats <- list()
 for (id in seq_along(list_dir_input_folders)) {
   sample_file <- list_dir_input_folders[id]
   sample <- basename(sample_file)
+  sample <- sub("_decontx.*$", "", sample)
+
   qc_stats$sample <- sample
   if (!any(metadata$sample_id == sample, na.rm = TRUE)) {
     stop(
@@ -150,14 +170,8 @@ for (id in seq_along(list_dir_input_folders)) {
 
   # Create seurat object with scRNA-seq data
   # read decontx converted matrices
-  counts <- Read10X_h5(
-    filename = list.files(
-      path = sample_file,
-      pattern = "decontx_feature_bc_matrix_filtered.h5$",
-      recursive = TRUE,
-      full.names = TRUE
-    )
-  )
+  counts <- Read10X_h5(filename = sample_file)
+
 
   sc_obj <- CreateSeuratObject(counts = counts, project = sample)
 
@@ -197,7 +211,7 @@ for (id in seq_along(list_dir_input_folders)) {
   qc_stats$counts_sd_pre <- sd(sc_obj$nCount_RNA)
 
   # Draw PRE plots
-  plot_pre <- plot_QCsample_RNA(
+  plot_pre <- plot_qcsample_rna(
     sc_obj,
     nfeature_rna_threshold,
     mitoratio_rna_threshold,
@@ -235,7 +249,7 @@ for (id in seq_along(list_dir_input_folders)) {
   # Filtering
   ########################################
   # Filter Bad cells
-  sc_obj <- remove_bad_cells_RNA(
+  sc_obj <- remove_bad_cells_rna(
     sc_obj, nfeature_rna_threshold,
     mitoratio_rna_threshold,
     ncounts_rna_threshold
@@ -243,7 +257,7 @@ for (id in seq_along(list_dir_input_folders)) {
   qc_stats$n_cells_before_doublets <- ncol(sc_obj)
 
   # Filter Multiplets
-  sc_obj <- remove_multiplets_RNA(sc_obj)
+  sc_obj <- remove_multiplets_rna(sc_obj)
 
   # Postfilter statistics
   ########################################
@@ -262,17 +276,22 @@ for (id in seq_along(list_dir_input_folders)) {
   qc_stats$counts_sd_filt <- sd(sc_obj$nCount_RNA)
 
   # Add decontx fraction to qc_stats
-  decontx_csv <- read.csv(
-    paste0(sample_file, "/decontx_feature_bc_matrix_metrics.csv"),
-    header = TRUE
-  )
+  decontx_csv_path <- sub("_decontx\\.h5$", "_decontx_metrics.csv", sample_file)
+
+  if (!file.exists(decontx_csv_path)) {
+    warning(paste("Metrics file not found for", sample, ":", decontx_csv_path))
+    qc_stats$avg_decontx_fraction_counts_removed <- NA
+  } else {
+    decontx_csv <- read.csv(decontx_csv_path, header = TRUE)
+    qc_stats$avg_decontx_fraction_counts_removed <- mean(decontx_csv$decontx_contamination)
+  }
   qc_stats$avg_decontx_fraction_counts_removed <-
     mean(decontx_csv[, "decontx_contamination"])
 
 
 
   # Draw POST plots
-  plot_post <- plot_QCsample_RNA(
+  plot_post <- plot_qcsample_rna(
     sc_obj,
     nfeature_rna_threshold,
     mitoratio_rna_threshold,
@@ -356,8 +375,8 @@ write.csv(
 
 
 ##### SessionInfo and Enviroment
-system(paste("conda export >", "./envs/main.yaml"))
-writeLines(
-  capture.output(sessionInfo()),
-  "./envs/R_session_info-sc-sn.txt"
-)
+# system(paste("conda export >", "./envs/main.yaml"))
+# writeLines(
+#   capture.output(sessionInfo()),
+#   "./envs/R_session_info-sc-sn.txt"
+# )

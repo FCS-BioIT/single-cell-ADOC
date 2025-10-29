@@ -49,7 +49,7 @@ dir.create(opt$outdir, showWarnings = FALSE, recursive = TRUE)
 option_list <- append(option_list, list(
   make_option("--paths",
     type = "character",
-    default = "PROGESTERONE",
+    default = "COLLAGEN",
     help = "Comma-separated signaling pathways to plot as circle plots"
   ),
   make_option("--circle_w", type = "double", default = 10),
@@ -90,6 +90,9 @@ if (!all(needed %in% cc_names)) {
 }
 ccc$cc_list <- ccc$cc_list[needed]
 names(ccc$cc_list) <- needed
+
+# creating individual pathways directory
+dir.create("output/ccc/individual_pathways")
 
 # ------------------------- Helpers -------------------------
 height_from_n <- function(n) {
@@ -181,13 +184,13 @@ p_combo <- ggarrange(
   legend = "top"
 )
 
-ggsave(file.path(opt$outdir, paste0("infoflow_rel_abs.", opt$format)),
+ggsave(file.path(opt$outdir, paste0("/infoflow_rel_abs.", opt$format)),
   p_combo,
   width = opt$img_w, height = opt$img_h, dpi = opt$dpi, bg = "white"
 )
 
-write_csv(df_rel, file.path(opt$outdir, "infoflow_relative_significant.csv"))
-write_csv(df_abs, file.path(opt$outdir, "infoflow_absolute_matched.csv"))
+write_csv(df_rel, file.path(opt$outdir, "/infoflow_relative_significant.csv"))
+write_csv(df_abs, file.path(opt$outdir, "/infoflow_absolute_matched.csv"))
 
 # ------------------------- Contribution plots -------------------------
 sig_paths <- unique(df_rel$name)
@@ -251,7 +254,7 @@ for (pathway in sig_paths) {
   out_file <- file.path(
     opt$outdir,
     paste0(
-      "individual_pathways/",
+      "/individual_pathways/",
       "contrib_",
       gsub(
         "[^A-Za-z0-9_]+",
@@ -293,7 +296,7 @@ if (length(path_keep) > 0) {
     file.path(
       opt$outdir,
       paste0(
-        "heatmap_outgoing_",
+        "/heatmap_outgoing_",
         opt$groupname1,
         "_vs_",
         opt$groupname2,
@@ -328,7 +331,7 @@ if (length(path_keep) > 0) {
     file.path(
       opt$outdir,
       paste0(
-        "heatmap_incoming_",
+        "/heatmap_incoming_",
         opt$groupname1,
         "_vs_",
         opt$groupname2,
@@ -347,7 +350,7 @@ if (length(path_keep) > 0) {
 
 # ------------------------- Circle plots: selected pathways (fixed) -----------
 dir.create(
-  file.path(opt$outdir, "circle_plots"),
+  file.path(opt$outdir, "/circle_plots"),
   showWarnings = FALSE,
   recursive = TRUE
 )

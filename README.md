@@ -11,13 +11,6 @@ It reproduces essential features of the human endometrium, such as epithelial po
 
 The single-cell RNA-seq analysis in this repository focuses on characterizing cellular heterogeneity, transcriptional states, and intercellular communication within this model to elucidate mechanisms of endometrial function and receptivity.
 
-## Code availability
-
-Code used to process the data is published in Zenodo under the DOI: 10.5281/zenodo.17412607 and the GitHub repo: https://github.com/FCS-BioIT/single-cell-ADOC
-
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.17412607.svg)](https://doi.org/10.5281/zenodo.17412607)
-
-
 ## Data availability
 
 Processed data required to reproduce results is published in ArrayExpress under the accession code E-MTAB-15842.
@@ -26,9 +19,9 @@ Processed data required to reproduce results is published in ArrayExpress under 
 
 ## Reproducibility
 
-This repository provides a fully reproducible analysis environment:
+This repository provides a fully reproducible analysis environment using two complementary tools:
 
-- **Pixi**: defines dependencies and R base version. 
+- **Pixi**: defines system-level dependencies and R base version. 
 
 ---
 
@@ -115,7 +108,6 @@ Inference of intercellular communication networks using CellChat.
 ### 7. Reference-based integration and similarity analysis
 Transfer of cell type labels and evaluation of similarity between the ADOC dataset and a reference dataset using Seurat transfer anchors and cosine similarity.
 
-- `src/convert_h5ad_to_rds.R`
 - `src/reference_dataset/load_reference.R`
 - `src/reference_dataset/reference_projection.R`
 

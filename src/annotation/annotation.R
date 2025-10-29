@@ -4,13 +4,16 @@ library(clustree)
 library(ggplot2)
 library(SeuratObject)
 library(openxlsx)
-
+library(dplyr)
+library(tidyr)
 
 # Loading the dataset to query
 
 out_dir <- "output/annotation/marker_annotation/"
 out_data <- paste0(out_dir, "data/")
 out_plots <- paste0(out_dir, "plots/")
+dir.create(out_data, showWarnings = FALSE, recursive = TRUE)
+dir.create(out_plots, showWarnings = FALSE, recursive = TRUE)
 
 seu <- LoadSeuratRds(file = "output/sample_integration/data/chip/seurat_filtered.rds") # nolint
 
@@ -63,6 +66,8 @@ SaveSeuratRds(
 out_dir <- "output/annotation/marker_annotation_v2/"
 out_data <- paste0(out_dir, "data/")
 out_plots <- paste0(out_dir, "plots/")
+dir.create(out_data, showWarnings = FALSE, recursive = TRUE)
+dir.create(out_plots, showWarnings = FALSE, recursive = TRUE)
 
 seu_dir <- paste0(
   "output/annotation/marker_annotation/data/",
@@ -187,6 +192,43 @@ ggsave(
 
 
 # Subsets with a more general annotation
+seu$celltype_general <- seu$celltype
+
+seu$celltype_general[
+  which(seu$celltype == "Decidual stroma")
+] <- "Stroma HT"
+seu$celltype_general[
+  which(seu$celltype == "Non-decidual stroma")
+] <- "Stroma HT"
+seu$celltype_general[
+  which(seu$celltype == "Stromal")
+] <- "Stroma No-HT"
+
+seu$celltype_general[
+  which(seu$celltype == "HT epithelium I")
+] <- "Epithelium HT"
+seu$celltype_general[
+  which(seu$celltype == "HT epithelium II")
+] <- "Epithelium HT"
+seu$celltype_general[
+  which(seu$celltype == "Luminal-like epithelium")
+] <- "Epithelium No-HT"
+
+seu$celltype_general[
+  which(seu$celltype == "Myofibroblast" & seu$group == "HT")
+] <- "Myofibroblast HT"
+seu$celltype_general[
+  which(seu$celltype == "Myofibroblast" & seu$group == "CNT")
+] <- "Myofibroblast No-HT"
+
+seu$celltype_general[
+  which(seu$celltype == "Cycling epithelium" & seu$group == "HT")
+] <- "Cycling epithelium HT"
+seu$celltype_general[
+  which(seu$celltype == "Cycling epithelium" & seu$group == "CNT")
+] <- "Cycling epithelium No-HT"
+
+
 unique(seu$celltype_general)
 seu_ss <- subset(
   seu,
@@ -216,6 +258,7 @@ ggsave(
   width = 8
 )
 
+print(seu_ss)
 
 ## BOXPLOT OF GENES
 

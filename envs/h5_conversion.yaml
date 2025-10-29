@@ -1,0 +1,28 @@
+name: h5_conversion
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  # Core Python
+  - python=3.10
+
+  # Core data + matrix handling
+  - numpy
+  - pandas
+  - scipy
+
+  # Scanpy / AnnData for reading and writing h5ad/h5
+  - scanpy
+  - anndata
+
+  # HDF5 backend
+  - h5py
+
+  # Optional but useful
+  - matplotlib-base  # required indirectly by scanpy
+  - pip
+
+  # pip-only dependencies (if you need a fallback)
+  - pip:
+      - tqdm

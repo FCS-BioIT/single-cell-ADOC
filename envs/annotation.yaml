@@ -1,0 +1,14 @@
+name: annotation
+channels:
+  - conda-forge
+  - bioconda
+  - genomedk
+dependencies:
+  - r-base=4.4.3
+  - r-seurat=5.3.0
+  - bioconductor-dittoSeq=1.18.0
+  - r-ggplot2
+  - r-clustree=0.5.1
+  - r-openxlsx
+  - bioconda::r-presto
+  - r-svglite

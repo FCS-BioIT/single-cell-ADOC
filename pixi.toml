@@ -6,6 +6,9 @@ platforms = ["linux-64"]
 version = "0.1.0"
 
 [tasks]
+dag = "snakemake --dry-run --snakefile src/Snakefile --rulegraph | dot -Tpng > dag.png"
+
+runpipe = "snakemake --snakefile src/Snakefile --cores 4 --config PIPELINE_DIR=$(pwd) --use-conda"
 
 [dependencies]
 r-seurat = ">=5.3.0,<6"
@@ -45,6 +48,7 @@ r-cytotrace2 = ">=1.0.0,<2"
 r-rfast = ">=2.1.0,<3"
 commitizen = ">=4.9.1,<5"
 r-sccustomize = ">=3.2.0,<4"
+snakemake = ">=7.32.4,<8"
 
 [feature.schandling.dependencies]
 

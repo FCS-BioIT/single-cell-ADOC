@@ -1,0 +1,8 @@
+# Root directory of the pipeline — adjust as needed
+PIPELINE_DIR: "/home/jaime/Documents/Projects/sc-adoc/single-cell-ADOC"
+
+# Optional: customize subfolder structure if desired
+INPUT_DIR: "input/matrix"
+OUTPUT_DIR: "output/h5_matrices"
+ENVS_DIR: "envs"
+SCRIPTS_DIR: "src/scripts"

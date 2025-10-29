@@ -6,25 +6,6 @@ suppressPackageStartupMessages({
 })
 
 
-# ---- Parallel config (do this ONCE near the top) ----
-n_workers <- opt$ncores
-if (requireNamespace("future", quietly = TRUE)) {
-  options(future.globals.maxSize = 8 * 1024^3) # 8 GiB; adjust to your RAM
-  if (.Platform$OS.type == "windows") {
-    future::plan(future::multisession, workers = n_workers)
-  } else {
-    # multicore is a bit lighter on *nix; falls back if not supported
-    future::plan(future::multicore, workers = n_workers)
-  }
-  on.exit(
-    {
-      try(future::plan(future::sequential), silent = TRUE)
-    },
-    add = TRUE
-  )
-}
-
-
 option_list <- list(
   make_option("--seurat_rds",
     type = "character",
@@ -60,6 +41,26 @@ option_list <- list(
   )
 )
 opt <- parse_args(OptionParser(option_list = option_list))
+
+
+# ---- Parallel config ----
+n_workers <- opt$ncores
+if (requireNamespace("future", quietly = TRUE)) {
+  options(future.globals.maxSize = 32 * 1024^3) # 100 GiB; adjust to your RAM
+  if (.Platform$OS.type == "windows") {
+    future::plan(future::multisession, workers = n_workers)
+  } else {
+    # multicore is a bit lighter on *nix; falls back if not supported
+    future::plan(future::multicore, workers = n_workers)
+  }
+  on.exit(
+    {
+      try(future::plan(future::sequential), silent = TRUE)
+    },
+    add = TRUE
+  )
+}
+
 
 dir.create(opt$outdir, showWarnings = FALSE, recursive = TRUE)
 logf <- file.path(opt$outdir, "log.txt")

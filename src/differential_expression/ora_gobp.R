@@ -1,4 +1,4 @@
-# --- WebGestaltR KEGG ORA on your DE outputs ---
+# --- WebGestaltR GOBP ORA on your DE outputs ---
 suppressPackageStartupMessages({
   library(dplyr)
   library(readr)
@@ -22,7 +22,7 @@ bg_genes <- rownames(GetAssayData(obj, assay = "RNA", slot = "data"))
 bg_genes <- unique(na.omit(bg_genes))
 
 # Helper: run ORA for one gene set
-run_kegg_ora <- function(genes, project, outdir) {
+run_gobp_ora <- function(genes, project, outdir) {
   genes <- unique(na.omit(genes))
   if (length(genes) < 10) {
     message(sprintf("[%s] Skipped: too few genes (%d).", project, length(genes)))
@@ -32,7 +32,7 @@ run_kegg_ora <- function(genes, project, outdir) {
   res <- WebGestaltR(
     organism = "hsapiens",
     enrichMethod = "ORA",
-    enrichDatabase = "pathway_KEGG",
+    enrichDatabase = "geneontology_Biological_Process_noRedundant",
     interestGene = genes,
     interestGeneType = "genesymbol",
     referenceGene = bg_genes,
@@ -68,8 +68,8 @@ run_kegg_ora <- function(genes, project, outdir) {
   }
 
   res$project <- project
-  readr::write_csv(res, file.path(outdir, paste0(project, "_KEGG_ORA.csv")))
-  saveRDS(res, file.path(outdir, paste0(project, "_KEGG_ORA.rds")))
+  readr::write_csv(res, file.path(outdir, paste0(project, "_GOBP_ORA.csv")))
+  saveRDS(res, file.path(outdir, paste0(project, "_GOBP_ORA.rds")))
   invisible(res)
 }
 
@@ -94,11 +94,11 @@ for (f in de_files) {
 
   # project labels from filename
   base <- basename(f) %>% str_remove("\\.csv$")
-  run_kegg_ora(
+  run_gobp_ora(
     de_up,
     project = paste0(base, "_GOBP_UP"), outdir = out_dir_enrich
   )
-  run_kegg_ora(
+  run_gobp_ora(
     de_down,
     project = paste0(base, "_GOBP_DOWN"), outdir = out_dir_enrich
   )

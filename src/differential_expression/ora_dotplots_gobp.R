@@ -2,7 +2,7 @@ library(ggplot2)
 library(tidyverse)
 plots_dir <- paste0(
   "output/differential_expression/",
-  "WebGestalt_GOBP_ORA/plots_selection/"
+  "WebGestalt_GOBP_ORA/plots/"
 )
 
 oras <- list.files(

@@ -131,7 +131,7 @@ for (contrast in cluster_contrasts) {
     )
   }
 
-  BiocParallel::register(MulticoreParam(workers = 8))
+  BiocParallel::register(BiocParallel::MulticoreParam(workers = 8))
 
   de <- FindMarkers(
     object = obj_sub,
