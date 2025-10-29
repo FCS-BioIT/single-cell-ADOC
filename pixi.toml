@@ -1,0 +1,58 @@
+[project]
+authors = ["Jaimelan <jlleraoy@gmail.com>"]
+channels = ["conda-forge","bioconda","genomedk","dnachun"]
+name = "fv-single-cell-reviews-scrna10x"
+platforms = ["linux-64"]
+version = "0.1.0"
+
+[tasks]
+
+[dependencies]
+r-seurat = ">=5.3.0,<6"
+python = "3.10.*"
+r-ggpubr = ">=0.6.1,<0.7"
+bioconductor-scdblfinder = { version = ">=1.20.2,<2", channel = "bioconda" }
+bioconductor-genomeinfodb = ">=1.42.0,<2"
+bioconductor-genomeinfodbdata = ">=1.2.13,<2"
+r-biocmanager = ">=1.30.26,<2"
+r-dt = ">=0.34.0,<0.35"
+r-janitor = ">=2.2.1,<3"
+r-harmony = ">=1.2.3,<2"
+r-clustree = ">=0.5.1,<0.6"
+r-patchwork = ">=1.3.2,<2"
+r-hdf5r = ">=1.3.12,<2"
+bioconductor-dittoseq = ">=1.18.0,<2"
+r-presto = ">=1.0.0,<2"
+r-webgestaltr = ">=0.4.6,<0.5"
+r-devtools = ">=2.4.5,<3"
+bioconductor-clusterprofiler = ">=4.14.0,<5"
+bioconductor-rhdf5 = ">=2.50.0,<3"
+r-signac = ">=1.15.0,<2"
+bioconductor-hdf5array = ">=1.34.0,<2"
+r-openxlsx = ">=4.2.8,<5"
+r-proxy = ">=0.4_27,<0.5"
+r-proxyc = ">=0.5.2,<0.6"
+r-sf = ">=1.0_20,<2"
+bioconductor-clustifyr = ">=1.18.0,<2"
+bioconductor-ucell = ">=2.10.1,<3"
+bioconductor-singler = ">=2.8.0,<3"
+bioconductor-mast = ">=1.32.0,<2"
+r-tidyverse = ">=2.0.0,<3"
+r-optparse = ">=1.7.5,<2"
+bioconductor-complexheatmap = ">=2.22.0,<3"
+r-renv = ">=1.1.5,<2"
+r-cytotrace2 = ">=1.0.0,<2"
+r-rfast = ">=2.1.0,<3"
+commitizen = ">=4.9.1,<5"
+r-sccustomize = ">=3.2.0,<4"
+
+[feature.schandling.dependencies]
+
+[feature.scp.dependencies]
+
+[feature.cytotrace.dependencies]
+
+[environments]
+schandling = ["schandling"]
+scp = ["scp"]
+cytotrace = ["cytotrace"]
